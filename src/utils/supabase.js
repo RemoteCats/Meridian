@@ -87,6 +87,25 @@ function getSupabase() {
       }
       return res.json();
     },
+
+    /**
+     * How many rows a table holds, without fetching them.
+     *
+     * PostgREST reports it in Content-Range when asked, which is the cheap way
+     * to answer "is anything in here at all" — the question behind every
+     * report that the dashboard looks empty.
+     */
+    async count(table, query = '') {
+      const res = await fetch(`${base}/${table}?select=id&limit=1${query ? `&${query}` : ''}`, {
+        headers: { ...headers, Prefer: 'count=exact' },
+      });
+      if (!res.ok) {
+        throw new Error(`supabase count ${table} failed: ${res.status} ${await res.text().catch(() => '')}`);
+      }
+      // "0-0/42", or "*/42" when the range itself is empty.
+      const total = String(res.headers.get('content-range') || '').split('/')[1];
+      return Number.isFinite(Number(total)) ? Number(total) : null;
+    },
   };
 
   console.log('[meridian] storage: Supabase');

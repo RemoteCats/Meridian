@@ -63,6 +63,41 @@ async function probeSchema() {
 }
 
 /**
+ * How much is actually in each table the dashboard reads.
+ *
+ * "The desk shows nothing" has two completely different causes and they are
+ * indistinguishable from the dashboard itself: either nothing was ever
+ * written, or it was written and the desk cannot read it. One number per
+ * table separates them, and `lastInbound` says when the mailbox last took
+ * delivery of anything at all — which is the question behind an empty Email
+ * tab, since that tab fills from received mail and nothing else.
+ */
+async function probeCounts() {
+  const supabase = getSupabase();
+  if (!supabase) return null;
+
+  const counts = {};
+  for (const table of ['enquiries', 'applications', 'chat_sessions', 'email_threads', 'email_messages']) {
+    try {
+      counts[table] = await supabase.count(table);
+    } catch (err) {
+      counts[table] = null;
+    }
+  }
+
+  try {
+    const rows = await supabase.select(
+      'email_messages',
+      'select=created_at,from_email&direction=eq.inbound&order=created_at.desc&limit=1'
+    );
+    counts.lastInbound = rows[0] ? { at: rows[0].created_at, from: rows[0].from_email } : null;
+  } catch (err) {
+    counts.lastInbound = null;
+  }
+  return counts;
+}
+
+/**
  * Ask Resend whether this deployment can actually send.
  *
  * A send is refused for reasons the server cannot see from its own
@@ -176,6 +211,7 @@ exports.health = async (req, res) => {
   // Opt-in: the plain health check stays a pure environment read.
   let schema;
   let mailProbe;
+  let counts;
   if (req.query.probe) {
     const probed = await probeSchema();
     schema = probed ? probed.results : null;
@@ -184,6 +220,13 @@ exports.health = async (req, res) => {
         `Table ${table} did not answer as expected: ${message}. Run supabase/migrations/${migration} in the Supabase SQL Editor.`
       );
     });
+
+    counts = await probeCounts();
+    if (mailbox && counts && counts.email_threads === 0) {
+      warnings.push(
+        'Nothing has ever been filed in the Email tab: no mail has reached /api/inbound/resend. Outbound notifications to FORM_TO do not appear there — that tab is the studio mailbox. Check the webhook under Resend, Webhooks: its delivery log shows whether anything was posted here, and what this site answered.'
+      );
+    }
 
     mailProbe = await probeMail();
     if (mailProbe.keyValid === false) {
@@ -229,6 +272,7 @@ exports.health = async (req, res) => {
     },
     storage: url && service ? 'supabase' : 'filesystem',
     schema: req.query.probe ? schema || 'supabase not configured' : undefined,
+    counts,
     mail: mailProbe,
     warnings,
   });

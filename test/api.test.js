@@ -208,6 +208,32 @@ async function withApp(env, fn) {
       }
     );
     receiving.close();
+
+    // The tables are there and answering, and still nothing is in them: the
+    // webhook has never been reached. That is a different fault from a
+    // missing migration and it needs a different thing done about it, so the
+    // probe counts the rows rather than only asking whether the table exists.
+    const quiet = await mock.start({});
+    await withApp(
+      {
+        SUPABASE_URL: `http://127.0.0.1:${quiet.address().port}`,
+        SUPABASE_SERVICE_ROLE_KEY: mock.SERVICE_KEY,
+        SUPABASE_ANON_KEY: mock.ANON_KEY,
+        MAILBOX_ADDRESS: 'Meridian Constructions <contact@meridian.test>',
+      },
+      async (base) => {
+        const res = await req(base, 'GET', '/api/health?probe=1');
+        assert.strictEqual(res.body.schema.email_threads, 'ok', 'the tables are fine');
+        assert.strictEqual(res.body.counts.email_threads, 0, JSON.stringify(res.body.counts));
+        assert.strictEqual(res.body.counts.lastInbound, null);
+        assert.ok(
+          res.body.warnings.some((w) => /no mail has reached \/api\/inbound\/resend/.test(w)),
+          JSON.stringify(res.body.warnings)
+        );
+        console.log('  ok  an empty inbox is reported as never reached, not as a broken table');
+      }
+    );
+    quiet.close();
   }
 
   /* ---- 5. contact enquiries still land ---- */

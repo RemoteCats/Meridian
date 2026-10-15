@@ -255,7 +255,20 @@ function start({ tables, port = 0, drop = [] }) {
           return direction === 'desc' ? -cmp : cmp;
         });
       }
+      const total = rows.length;
       if (limit) rows = rows.slice(0, limit);
+      // PostgREST reports the full size in Content-Range when the caller asks
+      // for a count, which is how the health probe answers "is this table
+      // empty" without reading it.
+      if (/count=exact/.test(String(req.headers.prefer || ''))) {
+        const last = Math.max(0, rows.length - 1);
+        res.writeHead(200, {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Content-Range': rows.length ? `0-${last}/${total}` : `*/${total}`,
+        });
+        return res.end(JSON.stringify(rows.map(project)));
+      }
       return json(res, 200, rows.map(project));
     }
 
