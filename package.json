@@ -11,6 +11,7 @@
     "prestart": "node scripts/build-pages.js",
     "adopt-photos": "node scripts/adopt-photos.js",
     "check:images": "node scripts/check-images.js",
+    "check:backend": "node scripts/check-backend.js",
     "check:vercel": "node scripts/check-vercel-upload.js",
     "test": "node test/api.test.js",
     "test:browser": "node test/browser.test.js && node test/fallback.test.js"

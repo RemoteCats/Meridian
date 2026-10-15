@@ -7,6 +7,9 @@ Everything here fits inside free tiers (Vercel Hobby, Supabase, Resend).
 
 ---
 
+For the shorter version — just the accounts, keys and SQL you have to supply —
+see [BACKEND-SETUP.md](BACKEND-SETUP.md).
+
 ## How it fits together
 
 | Piece | Where it runs |
@@ -392,9 +395,14 @@ and `inbound_emails`.
 npm install
 cp .env.example .env
 npm run build
-npm start          # http://localhost:3000
+npm start          # http://localhost:3000, reads .env on start
 npm run dev        # build + auto-restart
+npm run check:backend   # what is still missing, and what to do about it
 ```
+
+`.env` is read by `npm start` itself — anything already exported in your shell
+wins over the file, and on a platform such as Vercel there is no file to read
+and the platform's own variables are used.
 
 With nothing configured, the app writes to `./data/` (git-ignored) and skips
 notifications, so you can work entirely offline. To test notifications locally, point

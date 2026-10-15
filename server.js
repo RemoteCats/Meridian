@@ -6,6 +6,11 @@
  */
 
 const http = require('http');
+
+// Local .env, if there is one. Must run before anything reads configuration:
+// on a platform (Vercel, a container) there is no file and this does nothing.
+require('./src/utils/env').loadEnv();
+
 const app = require('./src/app');
 
 const PORT = Number(process.env.PORT) || 3000;

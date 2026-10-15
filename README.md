@@ -195,12 +195,20 @@ where a third-party desk would take over instead.
 
 ```bash
 npm install
-cp .env.example .env   # optional: adjust PORT, rate limits, notify email
+cp .env.example .env   # Supabase and Resend keys; the server reads it on start
 npm run build          # generate public/*.html from src/site (also runs on start)
 npm start              # http://localhost:3000
 npm run dev            # build + watch mode
 npm test               # API, chat and schema checks against a mock Supabase
+npm run check:backend  # what the backend is still missing, and what to do about it
 ```
+
+With nothing in `.env` the site runs against local files, so the whole frontend
+works offline. `npm run check:backend` is the path from there to a live backend:
+it reads `.env` the way the server does, probes the project, the tables, the
+admin account and the sending domain, and prints the next thing to do.
+**[docs/BACKEND-SETUP.md](docs/BACKEND-SETUP.md)** is the list of what you have
+to supply.
 
 `npm test` needs nothing beyond Node: `test/mock-supabase.js` stands in for PostgREST,
 GoTrue and the row level security rules, and rejects a column that is not in the
@@ -248,11 +256,11 @@ npm run test:browser                    # CHROME_PATH=... if it is not on the de
   heading to nothing leaves it with no rendered area, and IntersectionObserver then
   never reports it visible, so the reveal never fires. A browser test asserts every
   `[data-reveal]` on the landing page ends up visible.
-- Section, service and project imagery lives in `public/assets/img/` as
-  blueprint-style SVGs drawn by `npm run artwork`: a cyanotype ground, a survey
-  grid, a title block and the structure in thin white line. They are honest
-  placeholders rather than stock photographs of buildings this practice did not
-  build, and real photography takes over from them as a file drop.
+- Section, service and project imagery is one shared library of fifteen
+  photographs in `public/assets/img/lib/`, reused across the pages. The build
+  refuses a plate that is not on disk, the same plate twice on one page, or two
+  projects sharing a hero, and alternate frames are cropped off-centre so a
+  reused plate reads as another frame from the same job.
 
 ## Deploying
 
@@ -326,11 +334,15 @@ whose `name` is deliberately empty until a real principal fills it in: while it 
 the leadership chapter credits the practice rather than inventing a person. See the
 table in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md#step-1-add-your-images).
 
-The site icons are the logo's building mark and live in `public/`, so nothing
-regenerates them; replacing the logo means replacing them too.
+The site icons are the logo's building mark. `scripts/make-brand.py` cuts all
+of it — the two colourways, the mark and the icons — out of
+`public/assets/brand/meridian-logo-source.webp`, so replacing the logo sheet and
+running that one script replaces every file that comes from it. It needs Pillow
+and is not part of the build.
 
-`npm run artwork` checks every image the data points at, so a new project cannot
-ship with a broken image or an accidental duplicate.
+`npm run check:images`, which the build runs first, checks every image the data
+points at, so a new project cannot ship with a broken image or an accidental
+duplicate.
 
 **Adding photography.** `docs/IMAGE-PROMPTS.md` lists every plate and where it
 appears, then carries a complete prompt — scene, camera settings, house style,
