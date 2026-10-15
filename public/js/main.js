@@ -55,6 +55,9 @@
      which is the difference between a page that animates and one that lurches. */
   function observeReveals() {
     const els = $$('[data-reveal]:not(.in)');
+    // Cards and service rows arrive from the API, so the tilt has to be
+    // hung on them after they land. Every injection already calls this.
+    applyTilt();
     if (reduceMotion || !('IntersectionObserver' in window)) {
       els.forEach((el) => el.classList.add('in'));
       return;
@@ -124,7 +127,7 @@
     }
   }
 
-  window.MERIDIAN = { $, $$, esc, fetchJSON, reduceMotion, projectCard, observeReveals, FALLBACK_PROJECTS, site };
+  window.MERIDIAN = { $, $$, esc, fetchJSON, reduceMotion, projectCard, observeReveals, applyTilt, FALLBACK_PROJECTS, site };
 
   /* Nav, scroll progress, underlay parallax, chapter rail ----------------- */
   const nav = $('#nav');
@@ -184,17 +187,29 @@
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
 
-  /* A restrained pointer tilt gives the glass surfaces physical depth without
-     changing layout. Touch and reduced-motion users keep the static view. */
-  if (!reduceMotion && window.matchMedia('(pointer: fine)').matches) {
-    const tiltTargets = $$('.hero-copy, .nav, .service, .project, .leadership-media');
-    tiltTargets.forEach((target) => {
+  /* A restrained pointer tilt gives a panel physical depth without changing
+     layout. Every panel a visitor can point at answers: the cards, the
+     numbers, the gallery frames and the page figure, not only the hero. The
+     element is given the .tilt class rather than an inline transform, so the
+     stylesheet owns what the tilt is composed with (the hover lift, the
+     slight scale on a picture) and nothing fights an inline style.
+     Touch and reduced-motion users keep the static view. */
+  const TILT = '.hero-copy, .nav, .service, .project, .card, .stat, .gallery-item,'
+    + ' .page-header-figure, .leadership-media, .service-row-media, .contact-detail';
+
+  function applyTilt(root = document) {
+    if (reduceMotion || !window.matchMedia('(pointer: fine)').matches) return;
+    $$(TILT, root).filter((el) => !el.classList.contains('tilt')).forEach((target) => {
+      target.classList.add('tilt');
+      // A big panel should move less than a small one, or the whole band
+      // swings like a sign in the wind.
+      const depth = target.matches('.hero-copy, .nav, .contact-detail') ? 2.2 : 4.2;
       target.addEventListener('pointermove', (event) => {
         const box = target.getBoundingClientRect();
         const x = (event.clientX - box.left) / box.width - 0.5;
         const y = (event.clientY - box.top) / box.height - 0.5;
-        target.style.setProperty('--tilt-x', `${(-y * 3.5).toFixed(2)}deg`);
-        target.style.setProperty('--tilt-y', `${(x * 4.5).toFixed(2)}deg`);
+        target.style.setProperty('--tilt-x', `${(-y * depth).toFixed(2)}deg`);
+        target.style.setProperty('--tilt-y', `${(x * depth * 1.25).toFixed(2)}deg`);
       });
       target.addEventListener('pointerleave', () => {
         target.style.setProperty('--tilt-x', '0deg');
@@ -202,6 +217,7 @@
       });
     });
   }
+  applyTilt();
 
   /* Section artwork settles into place as its chapter arrives. */
   function stageChapters() {
@@ -249,23 +265,77 @@
     });
   }
 
-  /* Hero slideshow ------------------------------------------------------- */
+  /* Hero slideshow -------------------------------------------------------
+     Five frames across the sectors the practice works in, crossfading behind
+     the copy. The indicators are the control as well as the progress: each
+     segment fills over the slide's own time, so the hero says how long it
+     will stay on a picture rather than changing without warning. Hovering
+     the hero holds the current frame, and a swipe or an arrow key moves it. */
   function setupSlides() {
     const wrap = $('#hero-slides');
     if (!wrap) return;
+    const hero = wrap.closest('.hero') || wrap.parentElement;
     const slides = $$('.slide', wrap);
     const dots = $$('#hero-dots .dot');
     if (slides.length <= 1) return;
-    const DURATION = 5500;
-    let idx = 0, timer = null;
+
+    const DURATION = 6000;
+    dots.forEach((d) => d.style.setProperty('--slide-duration', `${DURATION}ms`));
+
+    let idx = 0;
+    let timer = null;
+    let held = false;
+
     const go = (n) => {
       idx = (n + slides.length) % slides.length;
       slides.forEach((s, i) => s.classList.toggle('is-active', i === idx));
-      dots.forEach((d, i) => d.classList.toggle('is-active', i === idx));
+      dots.forEach((d, i) => {
+        const on = i === idx;
+        // Dropping and re-adding is-timing restarts the fill: an animation
+        // that is already running does not replay just because the element
+        // gained a class it already had.
+        d.classList.remove('is-timing');
+        d.classList.toggle('is-active', on);
+        d.setAttribute('aria-selected', String(on));
+        if (on && !held) { void d.offsetWidth; d.classList.add('is-timing'); }
+      });
     };
-    const stop = () => { if (timer) { clearInterval(timer); timer = null; } };
-    const start = () => { stop(); if (!reduceMotion) timer = setInterval(() => go(idx + 1), DURATION); };
+
+    const stop = () => {
+      if (timer) { clearTimeout(timer); timer = null; }
+      dots.forEach((d) => d.classList.remove('is-timing'));
+    };
+    const start = () => {
+      stop();
+      if (reduceMotion || held) return;
+      const tick = () => { go(idx + 1); timer = setTimeout(tick, DURATION); };
+      const active = dots[idx];
+      if (active) { void active.offsetWidth; active.classList.add('is-timing'); }
+      timer = setTimeout(tick, DURATION);
+    };
+
     dots.forEach((d) => d.addEventListener('click', () => { go(Number(d.dataset.slide)); start(); }));
+
+    // Reading the copy should not race a timer.
+    if (hero) {
+      hero.addEventListener('pointerenter', () => { held = true; stop(); });
+      hero.addEventListener('pointerleave', () => { held = false; start(); });
+      hero.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight') { go(idx + 1); start(); }
+        if (e.key === 'ArrowLeft') { go(idx - 1); start(); }
+      });
+
+      // Swipe, for the phone where there is no pointer to hover with.
+      let x0 = null;
+      hero.addEventListener('touchstart', (e) => { x0 = e.touches[0].clientX; }, { passive: true });
+      hero.addEventListener('touchend', (e) => {
+        if (x0 == null) return;
+        const dx = e.changedTouches[0].clientX - x0;
+        if (Math.abs(dx) > 48) { go(idx + (dx < 0 ? 1 : -1)); start(); }
+        x0 = null;
+      }, { passive: true });
+    }
+
     document.addEventListener('visibilitychange', () => (document.hidden ? stop() : start()));
     start();
   }

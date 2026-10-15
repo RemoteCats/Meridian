@@ -74,7 +74,19 @@
       "prefer": [
         "meridian3"
       ],
+      "fallback": "/assets/img/lib/offshore-platform.webp"
+    },
+    {
+      "prefer": [
+        "meridian4"
+      ],
       "fallback": "/assets/img/lib/highway-works.webp"
+    },
+    {
+      "prefer": [
+        "meridian5"
+      ],
+      "fallback": "/assets/img/lib/power-plant.webp"
     }
   ]
 }

@@ -92,14 +92,14 @@ function head({ title, description, noindex = false, styles = [] }) {
  */
 function brandLockup(size = 42) {
   return `<span class="brand-lockup">
-      <img class="brand-mark" src="/assets/brand/meridian-mark.webp" alt="" width="${size}" height="${size}" aria-hidden="true" />
+      <img class="brand-mark" src="/assets/brand/meridian-mark.webp" alt="" width="${size}" height="${Math.round(size * 350 / 368)}" aria-hidden="true" />
       <span class="brand-word"><b>Meridian</b><span>Constructions</span></span>
     </span>`;
 }
 
 /** The supplied logo, whole, for surfaces with vertical room. */
 function brandLogo(cls = 'brand-logo') {
-  return `<img class="${cls}" src="/assets/brand/meridian-logo-light.webp" alt="Meridian Constructions" width="656" height="551" />`;
+  return `<img class="${cls}" src="/assets/brand/meridian-logo-light.webp" alt="Meridian Constructions" width="656" height="552" />`;
 }
 
 function nav(active = '') {

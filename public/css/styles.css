@@ -1988,6 +1988,8 @@ body, main { background: var(--meridian-paper) !important; color: var(--meridian
 /* Filter chips on /projects */
 .chip { border: 1px solid rgb(14 58 70 / .2) !important; border-radius: 0 !important; background: transparent !important; color: var(--meridian-ink) !important; }
 .chip:hover { border-color: var(--meridian-signal) !important; color: var(--meridian-signal) !important; }
+.nav .nav-cta { background: var(--meridian-flare) !important; color: #0b0d10 !important; border-color: var(--meridian-flare) !important; font-weight: 600; }
+.nav .nav-cta:hover { background: var(--meridian-flare-soft) !important; border-color: var(--meridian-flare-soft) !important; color: #0b0d10 !important; }
 .chip.active { background: var(--meridian-flare) !important; border-color: var(--meridian-ink) !important; color: var(--meridian-ink) !important; font-weight: 600; }
 
 /* Section numbering: the eyebrow's leading digits carry the yellow. */
@@ -2147,4 +2149,279 @@ form .btn:not(.ghost):hover { background: var(--meridian-flare-soft) !important;
 .leadership-role {
   font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.14em;
   text-transform: uppercase; color: var(--meridian-signal); margin: 6px 0 18px;
+}
+
+/* =========================================================================
+   Brightness pass
+   The colour pass above traded near-black for a deep teal, which fixed the
+   heaviness and left the page quiet: an off-white sheet with teal type and a
+   yellow button. This pass takes the brief the other way. The light surfaces
+   go up to near-white so photographs sit on something that reads as daylight;
+   the dark surfaces go the whole way to black, because black against bright
+   yellow is what a construction site actually looks like; and the yellow is
+   lifted from brass to the yellow on a hard hat, so it carries the accents
+   rather than blending into the sand.
+
+   Teal stays, but demoted: it marks links and pointers, nothing structural.
+   ========================================================================= */
+:root {
+  --meridian-ink: #15181c;        /* black, with just enough blue to sit beside photography */
+  --meridian-ink-deep: #0b0d10;   /* the footer floor and the nav */
+  --meridian-paper: #fdfcf9;      /* daylight, not cream */
+  --meridian-sand: #fff6e0;       /* warm tint for alternating bands */
+  --meridian-mist: #eff6f7;
+  --meridian-muted: #4e585f;
+  --meridian-signal: #0d7f9a;     /* teal: links and pointers only */
+  --meridian-flare: #ffc400;      /* construction yellow */
+  --meridian-flare-soft: #ffdd66;
+  --meridian-flare-deep: #d99e00; /* for yellow type on a light surface */
+  --meridian-rule: rgb(21 24 28 / 0.14);
+}
+
+/* The dark surfaces are black now, each one edged in yellow. */
+.nav { background: var(--meridian-ink-deep) !important; border-bottom: 3px solid var(--meridian-flare) !important; }
+.hero { background-color: #000 !important; }
+.footer { background: var(--meridian-ink-deep) !important; border-top: 3px solid var(--meridian-flare); }
+.chat-toggle, .chat-head { background: var(--meridian-ink-deep) !important; }
+.scroll-progress { background: var(--meridian-flare); box-shadow: 0 0 14px rgb(255 196 0 / 0.75); }
+
+/* Photography at full colour. The quarter-grayscale was there to make plates
+   from different shoots agree; they are one library now, so the pictures can
+   simply be bright. */
+.chapter-media img { filter: saturate(1.06) contrast(1.04) brightness(1.03) !important; }
+.leadership-media img { filter: saturate(1.04) contrast(1.02) !important; }
+
+/* Bands: white, warm white, and one black. A long page alternates instead of
+   running as one sheet, and the practice numbers get the black band so the
+   figures land in yellow on black — the one place on the page that shouts. */
+.chapter:nth-of-type(odd) { background: var(--meridian-paper) !important; }
+.chapter:nth-of-type(even) { background: var(--meridian-sand) !important; color: var(--meridian-ink) !important; }
+.chapter#contact { background: var(--meridian-mist) !important; }
+.section-pad.alt { background: var(--meridian-sand); }
+.gallery-band { background: var(--meridian-mist); }
+
+.chapter#metrics { background: var(--meridian-ink) !important; color: var(--meridian-paper) !important; }
+.chapter#metrics .section-head h2 { color: var(--meridian-paper) !important; }
+.chapter#metrics .section-head p { color: rgb(253 252 249 / 0.74) !important; }
+.chapter#metrics .eyebrow { color: var(--meridian-flare) !important; }
+.chapter#metrics .chapter-media::after { background: linear-gradient(90deg, var(--meridian-flare) 0 46%, rgb(253 252 249 / .4) 46% 100%); }
+#metrics .stat { background: rgb(255 255 255 / 0.05) !important; border: 1px solid rgb(255 255 255 / 0.16) !important; }
+#metrics .stat:nth-child(2n) { background: rgb(255 196 0 / 0.07) !important; }
+#metrics .stat .num, #metrics .stat .num em { color: var(--meridian-flare) !important; }
+#metrics .stat .lbl { color: rgb(253 252 249 / 0.68) !important; }
+#metrics .stat:hover { background: rgb(255 196 0 / 0.12) !important; box-shadow: 0 20px 44px -28px rgb(255 196 0 / 0.6) !important; }
+#metrics .stat::after { background: var(--meridian-flare) !important; }
+
+/* The readout on the hero floor: yellow block, black type, a black shadow
+   offset the way a site sign is painted. */
+.hero-readout { background: var(--meridian-flare) !important; color: #0b0d10 !important; border: 1px solid #0b0d10 !important; box-shadow: 10px 10px 0 rgb(0 0 0 / 0.55) !important; }
+.hero-readout .k { color: rgb(11 13 16 / 0.72) !important; }
+.hero-readout .v { color: #0b0d10 !important; }
+
+/* The hero scrim is lighter: the photograph underneath it is the brightest
+   thing on the page and was being dimmed to make room for a glass panel that
+   already carries its own ground. */
+.hero-scrim { background: linear-gradient(100deg, rgb(0 0 0 / .5) 0%, rgb(0 0 0 / .26) 48%, rgb(0 0 0 / .06) 100%) !important; }
+.hero::after { opacity: .3 !important; background-image: linear-gradient(rgb(255 196 0 / .3) 1px, transparent 1px), linear-gradient(90deg, rgb(255 196 0 / .3) 1px, transparent 1px) !important; }
+/* An earlier pass stripped the panel back to bare type on the photograph and
+   took its padding with it, which leaves the copy touching its own edge now
+   that the panel has a ground again. */
+.hero-copy {
+  padding: clamp(28px, 3.4vw, 46px) clamp(28px, 3.6vw, 52px) clamp(30px, 3.4vw, 42px) !important;
+  background: linear-gradient(135deg, rgb(8 10 13 / 0.62), rgb(8 10 13 / 0.24)) !important;
+  border: 1px solid rgb(255 255 255 / 0.18) !important;
+  border-left: 4px solid var(--meridian-flare) !important;
+  backdrop-filter: blur(6px) saturate(1.1) !important;
+  -webkit-backdrop-filter: blur(6px) saturate(1.1) !important;
+}
+.hero-tag, .hero .eyebrow { color: var(--meridian-flare) !important; letter-spacing: 0.22em; }
+.hero h1 em, .hero h1 b { color: var(--meridian-flare) !important; font-style: normal; }
+
+/* Buttons and chips carry the brighter yellow. */
+.btn:not(.ghost), .chapter .btn:not(.ghost), .hero .btn:not(.ghost),
+.page-header .btn:not(.ghost), .cta-inner .btn:not(.ghost), form .btn:not(.ghost) {
+  background: var(--meridian-flare) !important;
+  color: #0b0d10 !important;
+  border-color: #0b0d10 !important;
+  box-shadow: 4px 4px 0 rgb(11 13 16 / 0.22);
+}
+.btn:not(.ghost):hover, .chapter .btn:not(.ghost):hover, .hero .btn:not(.ghost):hover,
+.page-header .btn:not(.ghost):hover, form .btn:not(.ghost):hover {
+  background: var(--meridian-flare-soft) !important;
+  box-shadow: 6px 6px 0 rgb(11 13 16 / 0.3);
+  transform: translateY(-2px);
+}
+.cta-band { background: var(--meridian-flare); border-top: 3px solid #0b0d10; border-bottom: 3px solid #0b0d10; }
+.cta-band .btn:not(.ghost) { background: #0b0d10 !important; color: var(--meridian-flare) !important; border-color: #0b0d10 !important; box-shadow: 4px 4px 0 rgb(11 13 16 / 0.25); }
+.cta-band .btn:not(.ghost):hover { background: #000 !important; color: var(--meridian-flare-soft) !important; }
+.nav .nav-cta { background: var(--meridian-flare) !important; color: #0b0d10 !important; border-color: var(--meridian-flare) !important; font-weight: 600; }
+.nav .nav-cta:hover { background: var(--meridian-flare-soft) !important; border-color: var(--meridian-flare-soft) !important; color: #0b0d10 !important; }
+.chip.active { background: var(--meridian-flare) !important; border-color: #0b0d10 !important; color: #0b0d10 !important; }
+.figure-metric { background: var(--meridian-flare); color: #0b0d10; border-bottom-color: #0b0d10; }
+.project-facts { border-top: 3px solid var(--meridian-flare); }
+.contact-grid form { border-top: 3px solid var(--meridian-flare); }
+
+/* Hairlines were a teal tint left over from the colour pass; on near-white
+   with black type they should be the type's own colour at low strength. */
+.services-grid, .stats-grid, .cards-grid { border-top: 1px solid var(--meridian-rule); }
+.services-grid .service, .stats-grid .stat, .cards-grid .card,
+.gallery-item, .page-header-figure, .service-row-media,
+.project-services a, .project-services span, .chip {
+  border-color: var(--meridian-rule) !important;
+}
+.services-grid .service::after, .cards-grid .card::after, .stats-grid .stat::after { background: var(--meridian-flare) !important; }
+.services-grid .service:hover, .cards-grid .card:hover { background: rgb(255 196 0 / 0.08) !important; }
+
+/* The eyebrow gets a yellow tick, so every section opens on the accent. */
+.eyebrow { color: var(--meridian-signal) !important; display: inline-flex; align-items: center; gap: 10px; }
+.eyebrow::before { content: ""; width: 20px; height: 3px; background: var(--meridian-flare); flex: none; }
+.chapter#metrics .eyebrow::before, .hero .eyebrow::before { background: var(--meridian-flare); }
+.section-head.centred .eyebrow { justify-content: center; }
+.service .num { color: rgb(255 196 0 / 0.7) !important; }
+
+/* =========================================================================
+   Motion
+   The page had one moving part, the hero. Everything that can be touched now
+   answers: panels take a slight tilt under a fine pointer, pictures ease in
+   as their frame arrives, and the yellow edge sweeps rather than appears.
+   All of it sits behind prefers-reduced-motion, which still gets the static
+   page it asked for.
+   ========================================================================= */
+.tilt {
+  transform: perspective(1100px)
+             rotateX(var(--tilt-x, 0deg))
+             rotateY(var(--tilt-y, 0deg))
+             translate3d(0, var(--lift, 0px), 0)
+             scale(var(--tilt-scale, 1)) !important;
+  transition: transform 240ms var(--ease-out), box-shadow 240ms var(--ease-out), background-color 240ms var(--ease);
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+.tilt:hover { --lift: -6px; }
+.cards-grid .card.tilt:hover, .services-grid .service.tilt:hover { --lift: -8px; }
+.gallery-item.tilt:hover, .page-header-figure.tilt:hover { --lift: -4px; --tilt-scale: 1.006; }
+
+/* Pictures breathe inside their frame rather than the frame moving. */
+.card .thumb, .gallery-item, .service-row-media, .page-header-figure { overflow: hidden; }
+.card .thumb img, .gallery-item img, .service-row-media img {
+  transition: transform 700ms var(--ease), filter 700ms var(--ease);
+}
+.card:hover .thumb img, .gallery-item:hover img, .service-row:hover .service-row-media img {
+  transform: scale(1.045);
+  filter: saturate(1.1) contrast(1.03);
+}
+
+/* Section artwork settles as the chapter arrives. */
+.chapter-media img { transform: scale(1.06); transition: transform 1200ms var(--ease); }
+.chapter.is-onstage .chapter-media img { transform: scale(1); }
+
+/* The link arrow draws its own rule as it is hovered. */
+.link-arrow { position: relative; }
+.link-arrow::after {
+  content: ""; position: absolute; left: 0; bottom: -6px; height: 2px; width: 0;
+  background: var(--meridian-flare); transition: width 320ms var(--ease);
+}
+.link-arrow:hover::after { width: 100%; }
+.nav-links a { position: relative; }
+.nav-links a::after {
+  content: ""; position: absolute; left: 0; bottom: -7px; height: 2px; width: 0;
+  background: var(--meridian-flare); transition: width 260ms var(--ease);
+}
+.nav-links a:hover::after, .nav-links a.is-active::after { width: 100%; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tilt { transform: none !important; transition: none; }
+  .chapter-media img, .card .thumb img, .gallery-item img { transform: none !important; transition: none; }
+  .btn:not(.ghost):hover { transform: none !important; }
+}
+
+/* =========================================================================
+   Hero slideshow
+   The slides were already crossfading behind the copy with nothing to say so
+   and no way to move between them: three separate rules hid the indicators,
+   one of them with !important. They are back, as a row of segments that fill
+   with the slide's own time, which is also the control for stepping through.
+   ========================================================================= */
+.hero-dots {
+  display: flex !important;
+  position: relative; z-index: 4;
+  gap: 10px; margin-top: 30px;
+}
+.hero-dots .dot {
+  position: relative; overflow: hidden;
+  width: 52px; height: 4px; border: 0; padding: 0; cursor: pointer;
+  background: rgb(255 255 255 / 0.3);
+  transition: background 300ms var(--ease);
+}
+.hero-dots .dot:hover { background: rgb(255 255 255 / 0.5); }
+.hero-dots .dot::after {
+  content: ""; position: absolute; inset: 0; width: 0;
+  background: var(--meridian-flare);
+}
+.hero-dots .dot.is-active::after { width: 100%; }
+.hero-dots .dot.is-active.is-timing::after { animation: dotfill var(--slide-duration, 6s) linear forwards; }
+@keyframes dotfill { from { width: 0; } to { width: 100%; } }
+.hero-dots .dot:focus-visible { outline: 2px solid var(--meridian-flare); outline-offset: 4px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-dots .dot.is-active.is-timing::after { animation: none; width: 100%; }
+}
+@media (max-width: 720px) {
+  .hero-dots { margin-top: 22px; }
+  .hero-dots .dot { width: 38px; }
+}
+
+/* =========================================================================
+   The wordmark
+   The logo sheet sets MERIDIAN in caps over CONSTRUCTIONS letterspaced
+   underneath. The nav lockup was setting the name in title case beside it,
+   so the two disagreed wherever they appeared on the same screen. The nav
+   now matches the sheet, and both carry the lifted yellow rather than the
+   bronze the artwork was drawn in.
+   ========================================================================= */
+.brand-word b {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 19px;
+  font-weight: 700;
+}
+.nav .brand-word > span,
+.footer .brand-word > span,
+.admin-brand .brand-word > span { color: var(--meridian-flare); opacity: 1; }
+.nav .brand-lockup, .footer .brand-lockup { color: #fdfcf9; }
+.nav .brand:hover .brand-word b { color: var(--meridian-flare); transition: color 220ms var(--ease); }
+.brand-mark { filter: drop-shadow(0 0 10px rgb(255 196 0 / 0.18)); }
+@media (max-width: 720px) { .brand-word b { font-size: 17px; letter-spacing: 0.05em; } }
+
+/* =========================================================================
+   Phone
+   The brightness pass gave the hero panel its padding back, which on a phone
+   is padding the headline no longer has room for, and the toggle was still
+   drawing itself as a white pane against what is now a black nav.
+   ========================================================================= */
+@media (max-width: 720px) {
+  .hero-copy { padding: clamp(22px, 5.4vw, 30px) clamp(20px, 5vw, 28px) clamp(24px, 5vw, 30px) !important; }
+  .hero h1 { font-size: clamp(40px, 12.2vw, 68px) !important; max-width: 9ch !important; }
+  .hero-sub { font-size: 16px !important; }
+
+  /* The toggle is a control on a black bar, not a pane on a photograph. */
+  .nav .nav-toggle { background: rgb(255 255 255 / 0.08) !important; border: 1px solid rgb(255 255 255 / 0.38) !important; box-shadow: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+  .nav .nav-toggle span { background: #fdfcf9 !important; }
+  .nav.open-sheet .nav-toggle span { background: var(--meridian-ink) !important; }
+
+  /* Two cells and then one across the bottom: three across a 390px screen
+     puts "Projects delivered" on three lines in a 100px column. The last row
+     is left-aligned, which keeps it clear of the chat button in the corner. */
+  /* The readout is laid out with flex further up the sheet, which ignores
+     the column rules the narrow breakpoints set for it. */
+  .hero-readout { display: grid !important; grid-template-columns: 1fr 1fr !important; }
+  .hero-readout .cell:last-child { grid-column: 1 / -1 !important; border-right: 0 !important; }
+  .hero-readout .cell { padding: 12px 16px !important; }
+  .hero-readout .k { font-size: 9.5px !important; letter-spacing: 0.12em !important; }
+  .hero-readout .v { font-size: 19px !important; }
+
+  /* An eyebrow that wraps to three lines should not centre its tick against
+     the middle line. */
+  .eyebrow { align-items: flex-start; }
+  .eyebrow::before { margin-top: 0.5em; }
 }
