@@ -94,6 +94,44 @@
     return drew;
   }
 
+  /* -------------------------------------------------------------- timing ---
+     The responder answers in the same millisecond the visitor's message is
+     stored, and both rows come back in one response. Drawn together, the
+     reply lands in the same frame as the message it is answering, which reads
+     as a form receipt rather than someone on the other end. So the agent's
+     side is held behind a typing indicator for roughly as long as the line
+     would take to type.
+
+     The rows are marked as seen the moment they are claimed, before they are
+     drawn, so a poll landing inside that pause cannot draw them early. */
+  const TYPING_FLOOR = 650;
+  const TYPING_CEILING = 2600;
+  const MS_PER_CHAR = 16;
+  const typingTime = (text) =>
+    Math.min(TYPING_CEILING, TYPING_FLOOR + String(text == null ? '' : text).length * MS_PER_CHAR);
+
+  function typingBubble() {
+    const el = document.createElement('div');
+    el.className = 'chat-msg agent typing';
+    el.textContent = 'Typing';
+    log.appendChild(el);
+    log.scrollTop = log.scrollHeight;
+    return el;
+  }
+
+  /** Draw rows after a pause, with a typing indicator standing in for them. */
+  function drawAfterPause(rows) {
+    const fresh = rows.filter((row) => !seen.has(keyOf(row)));
+    if (!fresh.length) return false;
+    fresh.forEach((row) => seen.add(keyOf(row)));
+    const typing = typingBubble();
+    setTimeout(() => {
+      typing.remove();
+      fresh.forEach((row) => bubble(senderOf(row), textOf(row)));
+    }, typingTime(textOf(fresh[0])));
+    return true;
+  }
+
   /* --------------------------------------------------------- transports --- */
 
   /* Rows straight to Supabase under the visitor's own anonymous identity. */
@@ -274,20 +312,28 @@
     try {
       const t = await connect();
       const rows = await t.send(text);
-      draw(rows);
 
-      // On the Supabase path only the visitor's own row comes back; the reply
-      // is written by the server a moment later and arrives on the next read.
-      if (!rows.some((row) => senderOf(row) === 'agent')) {
-        const typing = document.createElement('div');
-        typing.className = 'chat-msg agent typing';
-        typing.textContent = 'Typing';
-        log.appendChild(typing);
-        log.scrollTop = log.scrollHeight;
-        setTimeout(async () => {
+      // The visitor's own message goes up at once; the answer waits a beat.
+      draw(rows.filter((row) => senderOf(row) !== 'agent'));
+      const answered = drawAfterPause(rows.filter((row) => senderOf(row) === 'agent'));
+
+      // On the Supabase path only the visitor's own row comes back: the reply
+      // is written by the server a moment later and arrives on a read. Hold
+      // the indicator across a few reads rather than one, so a slow write
+      // does not leave the message looking ignored.
+      if (!answered) {
+        const typing = typingBubble();
+        let tries = 0;
+        const look = async () => {
+          tries += 1;
+          const before = log.children.length;
           await refresh(false);
-          typing.remove();
-        }, 900);
+          if (log.children.length > before || tries >= 4) typing.remove();
+          else setTimeout(look, 900);
+          // Keep the indicator last in the log, under anything just drawn.
+          if (typing.parentNode) log.appendChild(typing);
+        };
+        setTimeout(look, 900);
       }
     } catch (err) {
       const inbox = (window.MERIDIAN && window.MERIDIAN.site.email) || 'the studio';

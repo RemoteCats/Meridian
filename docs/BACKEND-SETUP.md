@@ -59,10 +59,10 @@ design: row level security protects the data, not the secrecy of that key.
    green. Sending from an unverified domain returns 403.
 2. **API Keys → Create** gives you `RESEND_API_KEY`.
 3. Set `FORM_TO` to wherever enquiries should land and `FORM_FROM` to an
-   address on the verified domain, as `Meridian Website <website@yourdomain.com>`.
+   address on the verified domain, as `Meridian Website <website@meridianconstructionltd.com>`.
 4. To receive mail as well, point an address at Resend, set
    `MAILBOX_ADDRESS`, add a webhook under **Webhooks** pointing at
-   `https://YOUR-DOMAIN/api/inbound/resend`, and copy its `whsec_` signing
+   `https://meridianconstructionltd.com/api/inbound/resend`, and copy its `whsec_` signing
    secret into `RESEND_WEBHOOK_SECRET`. Without that secret the endpoint
    refuses every request rather than trusting an unsigned post.
 5. `FORWARD_TO` keeps a copy of inbound mail somewhere else. It **must** be a
@@ -81,9 +81,9 @@ SUPABASE_ANON_KEY="eyJ..."
 SUPABASE_SERVICE_ROLE_KEY="eyJ..."
 
 RESEND_API_KEY="re_..."
-FORM_TO="studio@yourdomain.com"
-FORM_FROM="Meridian Website <website@yourdomain.com>"
-MAILBOX_ADDRESS="Meridian Constructions <studio@yourdomain.com>"
+FORM_TO="studio@meridianconstructionltd.com"
+FORM_FROM="Meridian Website <website@meridianconstructionltd.com>"
+MAILBOX_ADDRESS="Meridian Constructions <studio@meridianconstructionltd.com>"
 RESEND_WEBHOOK_SECRET="whsec_..."
 FORWARD_TO=""
 STUDIO_NAME="Meridian Constructions"
@@ -101,11 +101,52 @@ Nothing needs a `VITE_` or `NEXT_PUBLIC_` prefix. The browser is handed the
 URL and anon key at runtime from `/api/public-config`, so a key rotation does
 not need a rebuild, and no secret is ever baked into a page.
 
+## Where mail shows up in /admin
+
+The desk has two places mail can land, and they fill from different things.
+Most "Resend says it sent, the dashboard shows nothing" comes down to looking
+at the wrong one.
+
+| Tab | Fills from | Needs |
+| --- | ---------- | ----- |
+| **Enquiries** | the contact and careers forms on the site | the database. Resend is not involved — an enquiry is stored whether or not any mail is sent |
+| **Email** | mail *received* at `MAILBOX_ADDRESS` and posted to `/api/inbound/resend` | `MAILBOX_ADDRESS`, `RESEND_WEBHOOK_SECRET`, the webhook pointed at your deployed domain, and `0002_email.sql` run |
+
+Notifications the site *sends* — the "New enquiry from…" mail that goes to
+`FORM_TO` — are outbound. They appear in your own inbox and in Resend's
+Emails log. They are never filed into the Email tab, because nothing received
+them: that tab is the studio mailbox, not a sent-items folder.
+
+So if Resend shows mail going out and the Email tab is empty, that is the
+system working. If mail is being *received* and the tab is still empty, it is
+one of four things, and each one says so:
+
+1. **The webhook is not set up, or its URL is wrong.** Resend's webhook log
+   shows no delivery, or a 404.
+2. **`RESEND_WEBHOOK_SECRET` is missing or stale.** Every post is refused
+   with 401 and `reason` in the body — unsigned requests are never trusted.
+   Resend's webhook log shows the 401.
+3. **`0002_email.sql` was never run**, or the deployment has no service role
+   key. The message is accepted and acknowledged, so Resend reports success,
+   and the response body carries `"filed": false` with a `fileError` saying
+   which. `GET /api/health?probe=1` warns about the same thing.
+4. **`MAILBOX_ADDRESS` does not match who the mail was addressed to.** The
+   response says `"ignored": "not_for_mailbox"`.
+
+`GET /api/health?probe=1` on the deployed site answers all of this in one
+request: whether Resend accepts the key, which domains are verified, whether
+`FORM_FROM` is on one of them, and whether the two email tables are there.
+
 ## 4. Check it
 
 ```bash
-npm run check:backend     # from a terminal, before or after deploying
+npm run check:backend                  # from a terminal, before or after deploying
+npm run check:backend -- --send-test   # and actually send one, to FORM_TO
 ```
+
+`--send-test` is the one step that proves mail leaves: it posts a real email
+through Resend and prints either the message id or Resend's own refusal,
+verbatim. A 403 there is almost always the sending domain.
 
 and, against a running server:
 

@@ -177,13 +177,33 @@ exports.resend = async (req, res, next) => {
     }
 
     // Archive onto a thread (best effort; never fails the webhook).
+    //
+    // When it does not happen, say why in the response as well as the log.
+    // Filing is the whole point of the endpoint and its failure is otherwise
+    // invisible: the provider records a 200, the sender sees nothing bounce,
+    // and the only symptom is that /admin stays empty. The provider's
+    // delivery log is where someone looks, so the reason belongs there.
     let threadId = null;
+    let fileError = null;
     const supabase = getSupabase();
-    if (supabase) {
+    if (!supabase) {
+      fileError = 'supabase_not_configured';
+      console.error(
+        '[meridian] inbound mail accepted but not filed: no Supabase URL or service role key in this environment, so /admin will not show it.'
+      );
+    } else {
       try {
         threadId = await fileOnThread(supabase, email);
+        if (!threadId) {
+          fileError = 'thread_not_created';
+          console.error('[meridian] inbound mail accepted but no thread was created.');
+        }
       } catch (err) {
-        console.error('[meridian] failed to file inbound email:', err.message);
+        fileError = err.message;
+        console.error(
+          `[meridian] failed to file inbound email: ${err.message}. ` +
+            'If this names email_threads or email_messages, run supabase/migrations/0002_email.sql.'
+        );
       }
     }
 
@@ -216,7 +236,13 @@ exports.resend = async (req, res, next) => {
       });
     }
 
-    return res.status(200).json({ ok: true, threadId, forwarded });
+    return res.status(200).json({
+      ok: true,
+      threadId,
+      filed: Boolean(threadId),
+      ...(fileError ? { fileError } : {}),
+      forwarded,
+    });
   } catch (err) {
     return next(err);
   }

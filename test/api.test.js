@@ -5,6 +5,8 @@ const http = require('http');
 const mock = require('./mock-supabase');
 
 const ROOT = require('path').join(__dirname, '..');
+// The token a visitor carries is not the row id: the store derives one.
+const chatStore = require(ROOT + '/src/utils/chatStore');
 
 async function req(base, method, path, body) {
   const res = await fetch(base + path, {
@@ -87,11 +89,30 @@ async function withApp(env, fn) {
         assert.strictEqual(history.body.messages[0].text, 'We need a bridge assessed.');
         console.log('  ok  history reads back in order with app roles');
 
+        // The widget opens with a welcome that is never stored, so the
+        // responder has to know it was said: a visitor who opens with "hi"
+        // used to be welcomed twice, once by the widget and once by this.
+        const opener = 'visitorsaidhi00001';
+        const hello = await req(base, 'POST', '/api/chat/message', { sessionId: opener, text: 'hi' });
+        const greeting = hello.body.messages[1].text;
+        assert.ok(
+          !greeting.startsWith("Hi, you're through to Meridian Constructions"),
+          'the reply to a greeting must not repeat the widget opening line: ' + greeting
+        );
+        assert.ok(greeting.length > 20, 'and must still be an answer');
+        console.log('  ok  a greeting is answered without repeating the opening line');
+
+        // Nor does it answer twice with the same sentence.
+        const again = await req(base, 'POST', '/api/chat/message', { sessionId: opener, text: 'hello?' });
+        assert.notStrictEqual(again.body.messages[1].text, greeting, 'the responder must not repeat itself');
+        console.log('  ok  a second greeting gets a different line');
+
         // Once a human answers, the canned responder stays quiet.
-        sb.db.chat_sessions.rows[0].handled_by_agent = true;
+        const before = sb.db.chat_messages.rows.length;
+        sb.db.chat_sessions.rows.find((r) => r.id === chatStore.sessionUuid(token)).handled_by_agent = true;
         const quiet = await req(base, 'POST', '/api/chat/message', { sessionId: token, text: 'Anyone there?' });
         assert.strictEqual(quiet.body.messages.length, 1, 'no auto-reply after handover');
-        assert.strictEqual(sb.db.chat_messages.rows.length, 5, 'only the visitor row was added');
+        assert.strictEqual(sb.db.chat_messages.rows.length, before + 1, 'only the visitor row was added');
         console.log('  ok  handover silences the automatic responder');
       }
     );

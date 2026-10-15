@@ -10,11 +10,12 @@
  * the two migrations, the admin row, anonymous sign-ins, the sending domain —
  * with the exact thing to do about each one.
  *
- *   npm run check:backend          report, exit 0
- *   npm run check:backend -- --strict   exit 1 if anything required is missing
+ *   npm run check:backend                report, exit 0
+ *   npm run check:backend -- --send-test  also send one real email to FORM_TO
+ *   npm run check:backend -- --strict     exit 1 if anything required is missing
  *
- * Reads only. It never writes to the database, never sends mail, and never
- * prints a key.
+ * Reads only, unless --send-test is passed. It never writes to the database
+ * and never prints a key.
  */
 
 const { loadEnv } = require('../src/utils/env');
@@ -24,6 +25,8 @@ loadEnv();
 const config = require('../src/utils/config');
 
 const STRICT = process.argv.includes('--strict');
+// Opt-in, because it actually sends: `npm run check:backend -- --send-test`.
+const SEND_TEST = process.argv.includes('--send-test');
 
 /* Output -------------------------------------------------------------------
    Colour only when the output is a terminal, so piping this into a file or a
@@ -232,11 +235,42 @@ async function main() {
     else need('FORM_TO is not set, so notifications have nowhere to go', 'Set FORM_TO to the address that should receive enquiries.');
   }
 
+  // An actual send, on request. Everything above is inference from what
+  // Resend reports about itself; this is the only step that proves a message
+  // leaves, and when it does not, Resend's own words come back verbatim.
+  if (SEND_TEST) {
+    if (!resendKey || !to) {
+      skip('test send', 'needs RESEND_API_KEY and FORM_TO');
+    } else {
+      const res = await get('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from,
+          to: to.split(',').map((s2) => s2.trim()).filter(Boolean),
+          subject: 'Meridian Constructions — backend test',
+          text: `Sent by npm run check:backend at ${new Date().toISOString()}.\n\n`
+            + 'If this arrived, the site can send mail: the key works, the domain is verified, '
+            + 'and FORM_TO is reachable.',
+        }),
+      });
+      if (res.ok) {
+        ok('test send accepted', `id ${(res.body && res.body.id) || 'unknown'} — check ${to}, and spam`);
+      } else {
+        const message = (res.body && (res.body.message || res.body.error)) || res.error || `HTTP ${res.status}`;
+        need(`Resend refused the test send: ${message}`,
+          res.status === 403
+            ? `403 is almost always the sending domain: ${domainOf(from)} has to be verified under Resend, Domains, and FORM_FROM has to be an address on it.`
+            : 'Fix what Resend reports above, then run this again with --send-test.');
+      }
+    }
+  }
+
   if (mailbox) {
     ok('MAILBOX_ADDRESS', mailbox);
     if (config.resendWebhookSecret()) ok('RESEND_WEBHOOK_SECRET', 'inbound mail is signature-checked');
     else need('MAILBOX_ADDRESS is set but RESEND_WEBHOOK_SECRET is not, so /api/inbound/resend refuses every post',
-      'Resend, Webhooks, add https://YOUR-DOMAIN/api/inbound/resend, then copy its whsec_ signing secret into RESEND_WEBHOOK_SECRET.');
+      'Resend, Webhooks, add https://meridianconstructionltd.com/api/inbound/resend, then copy its whsec_ signing secret into RESEND_WEBHOOK_SECRET.');
   } else {
     skip('inbound mail', 'MAILBOX_ADDRESS not set — the studio inbox on /admin stays empty');
   }

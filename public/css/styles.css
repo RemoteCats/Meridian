@@ -2425,3 +2425,11 @@ form .btn:not(.ghost):hover { background: var(--meridian-flare-soft) !important;
   .eyebrow { align-items: flex-start; }
   .eyebrow::before { margin-top: 0.5em; }
 }
+
+/* The chat panel joins the palette: the visitor's own side carries the
+   yellow, the studio's side stays on paper, and the typing indicator reads
+   as a held line rather than a message. */
+.chat-msg.user { background: var(--meridian-flare) !important; color: #0b0d10 !important; border-color: #0b0d10 !important; font-weight: 500; }
+.chat-msg.agent { background: #f2f0ea !important; border-color: var(--meridian-rule) !important; color: var(--meridian-ink) !important; }
+.chat-msg.typing { background: transparent !important; border-color: transparent !important; color: var(--meridian-muted) !important; }
+.chat-msg.typing::after { content: "…"; letter-spacing: 2px; }

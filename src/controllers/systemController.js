@@ -62,6 +62,44 @@ async function probeSchema() {
   return { results, problems };
 }
 
+/**
+ * Ask Resend whether this deployment can actually send.
+ *
+ * A send is refused for reasons the server cannot see from its own
+ * environment: a key that was revoked or belongs to another account, or a
+ * FROM address on a domain that was never verified, which answers 403 on
+ * every attempt. Both look identical from here — mail simply does not
+ * arrive — so the question is put to Resend rather than guessed at.
+ *
+ * Reads only: it lists domains, it does not send anything.
+ */
+async function probeMail() {
+  const apiKey = config.resendApiKey();
+  if (!apiKey) return { configured: false, note: 'RESEND_API_KEY is not set, so no mail is sent.' };
+
+  const from = config.parseAddress(config.formFrom()).email;
+  const fromDomain = (from.split('@')[1] || '').toLowerCase();
+  try {
+    const res = await fetch('https://api.resend.com/domains', {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+    if (res.status === 401) return { configured: true, keyValid: false, note: 'Resend rejected the API key.' };
+    if (!res.ok) return { configured: true, note: `Resend answered ${res.status} to a domain list.` };
+
+    const body = await res.json().catch(() => ({}));
+    const verified = (body.data || []).filter((d) => d.status === 'verified').map((d) => String(d.name).toLowerCase());
+    return {
+      configured: true,
+      keyValid: true,
+      verifiedDomains: verified,
+      from,
+      canSendAsFrom: verified.includes(fromDomain),
+    };
+  } catch (err) {
+    return { configured: true, note: `Could not reach Resend: ${err.message}` };
+  }
+}
+
 /** GET /api/public-config: what the browser needs to talk to Supabase. */
 exports.publicConfig = (req, res) => {
   const url = config.supabaseUrl();
@@ -137,6 +175,7 @@ exports.health = async (req, res) => {
 
   // Opt-in: the plain health check stays a pure environment read.
   let schema;
+  let mailProbe;
   if (req.query.probe) {
     const probed = await probeSchema();
     schema = probed ? probed.results : null;
@@ -145,6 +184,32 @@ exports.health = async (req, res) => {
         `Table ${table} did not answer as expected: ${message}. Run supabase/migrations/${migration} in the Supabase SQL Editor.`
       );
     });
+
+    mailProbe = await probeMail();
+    if (mailProbe.keyValid === false) {
+      warnings.push('Resend rejected RESEND_API_KEY. Create a new key and set it again, here and in the hosting environment.');
+    }
+    if (mailProbe.verifiedDomains && !mailProbe.verifiedDomains.length) {
+      warnings.push('Resend has no verified sending domain, so every send is refused with 403. Verify a domain under Resend, Domains.');
+    }
+    if (mailProbe.canSendAsFrom === false && mailProbe.verifiedDomains && mailProbe.verifiedDomains.length) {
+      warnings.push(
+        `FORM_FROM sends as ${mailProbe.from}, which is not on a verified domain (${mailProbe.verifiedDomains.join(', ')}), so every send is refused with 403.`
+      );
+    }
+    // Mail arriving at the mailbox is filed onto these two tables. Without
+    // them a message is accepted, acknowledged to the provider, and then
+    // dropped — the provider's log says delivered and /admin stays empty.
+    if (mailbox && schema && (schema.email_threads !== 'ok' || schema.email_messages !== 'ok')) {
+      warnings.push(
+        'Mail can be received but not filed: email_threads / email_messages are not answering, so the Email tab on /admin stays empty however many messages arrive. Run supabase/migrations/0002_email.sql.'
+      );
+    }
+    if (mailbox && !url) {
+      warnings.push(
+        'MAILBOX_ADDRESS is set but there is no database, so received mail is acknowledged and dropped rather than filed. The Email tab on /admin will stay empty.'
+      );
+    }
   }
 
   res.json({
@@ -164,6 +229,7 @@ exports.health = async (req, res) => {
     },
     storage: url && service ? 'supabase' : 'filesystem',
     schema: req.query.probe ? schema || 'supabase not configured' : undefined,
+    mail: mailProbe,
     warnings,
   });
 };

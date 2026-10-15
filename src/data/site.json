@@ -1,7 +1,7 @@
 {
   "_comment": "The practice's contact details. These are the values the pages are built with; the studio desk can change any of them under Settings at /admin and every page picks the change up on its next load, with no rebuild. Address is blank until you set one, and its row stays hidden while it is.",
   "address": "",
-  "email": "hello@meridianconstruction.com",
+  "email": "hello@meridianconstructionltd.com",
   "phone": "(714) 738-8708",
   "hours": "Monday to Friday, 7:00am to 5:30pm PT"
 }

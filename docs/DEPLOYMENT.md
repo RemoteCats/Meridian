@@ -284,18 +284,18 @@ directly. Set `CHAT_NOTIFY=off` to keep enquiry emails but stop chat emails.
 
 For production, verify your domain in Resend (**Domains, Add Domain**, then add the
 DNS records) and change `FORM_FROM` to something like
-`Meridian Website <studio@yourdomain.com>`. Mail from a verified domain is far less
+`Meridian Website <studio@meridianconstructionltd.com>`. Mail from a verified domain is far less
 likely to be treated as spam.
 
 ---
 
 ## Step 7: Receive mail on your domain and forward it
 
-This gives you `studio@yourdomain.com` that lands in whatever inbox you actually read.
+This gives you `studio@meridianconstructionltd.com` that lands in whatever inbox you actually read.
 The endpoint is `POST /api/inbound/resend`.
 
 1. In Resend, verify your domain if you have not already, and enable **inbound email**
-   for the address you want (for example `studio@yourdomain.com`), following Resend's
+   for the address you want (for example `studio@meridianconstructionltd.com`), following Resend's
    DNS instructions.
 2. Create a **webhook** pointing at:
 
@@ -310,7 +310,7 @@ The endpoint is `POST /api/inbound/resend`.
    | Name | Value |
    | ---- | ----- |
    | `RESEND_WEBHOOK_SECRET` | the `whsec_...` signing secret |
-   | `MAILBOX_ADDRESS` | `studio@yourdomain.com` |
+   | `MAILBOX_ADDRESS` | `studio@meridianconstructionltd.com` |
    | `FORWARD_TO` | your real inbox |
 
 5. **Redeploy**, then send a test message to `MAILBOX_ADDRESS`.
